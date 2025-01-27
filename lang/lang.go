@@ -7,7 +7,28 @@ type Span struct {
 	end   Pos
 }
 
+func (s Span) replaceIfNil(startSpan Span) Span {
+	if s.IsNil() {
+		return startSpan
+	}
+	return s
+}
+
+func (s Span) IsNil() bool {
+	return s.start < 0
+}
+
+func (s Span) Length() int {
+	return s.end - s.start
+}
+
 func (s Span) mergeSpan(a Span) Span {
+	if s.IsNil() {
+		return a
+	}
+	if a.IsNil() {
+		return s
+	}
 	return Span{start: min(s.start, a.start), end: max(s.end, a.end)}
 }
 

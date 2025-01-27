@@ -1,6 +1,9 @@
 package lang
 
-import "fmt"
+import (
+	"errors"
+	"slices"
+)
 
 type Parser struct {
 	reporter Reporter
@@ -9,52 +12,83 @@ type Parser struct {
 }
 
 func NewParser(lexer *Lexer, reporter Reporter) *Parser {
-	var token = lexer.NextToken()
+	token := lexer.NextToken()
 	return &Parser{reporter: reporter, lexer: lexer, token: token}
 }
 
+/*
+Path ::= Atom ( '.' IDENT | '[' Atom ']' )*
+*/
 func (p *Parser) Parse() Expr {
-	var expr = p.parseAtom()
+	expr := p.parseRoot()
 	for {
 		if p.token.kind == DOT {
+			dotSpan := p.token.span
 			p.nextToken()
-			var ident = p.expectIdent()
-			expr = &FieldAccess{span: expr.Span().mergeSpan(ident.span), expr: expr, field: *ident}
+			if ident, err := p.expectIdent(); err == nil {
+				expr = &FieldAccess{span: expr.Span().mergeSpan(ident.span), expr: expr, field: *ident}
+			} else {
+				span := p.skipTo([]TokenKind{DOT, LEFT_BRT, EOF}).mergeSpan(dotSpan)
+				expr = &BadFieldAccess{span: expr.Span().mergeSpan(span), expr: expr}
+			}
 		} else if p.token.kind == LEFT_BRT {
 			p.nextToken()
-			var index = p.parseAtom()
+			index := p.parseAtom([]TokenKind{DOT, RIGHT_BRT, EOF})
 			if p.token.kind != RIGHT_BRT {
-				panic(fmt.Sprintf("expecting ']', got %d", p.token.kind))
+				p.reporter.Report(p.token.span, "expecting ']'")
+				span := p.skipTo([]TokenKind{DOT, LEFT_BRT, RIGHT_BRT, EOF}).mergeSpan(index.Span())
+				expr = &ArrayAccess{span: expr.Span().mergeSpan(span), expr: expr, index: index}
+			} else {
+				endSpan := p.token.span
+				p.nextToken()
+				expr = &ArrayAccess{span: expr.Span().mergeSpan(endSpan), expr: expr, index: index}
 			}
-			var endSpan = p.token.span
-			p.nextToken()
-			expr = &ArrayAccess{span: expr.Span().mergeSpan(endSpan), expr: expr, index: index}
-		} else {
+		} else if p.token.kind == EOF {
 			break
+		} else {
+			span := p.skipTo([]TokenKind{DOT, LEFT_BRT, EOF})
+			p.reporter.Report(span, "unexpected tokens")
 		}
-	}
-	if p.token.kind != EOF {
-		panic(fmt.Sprintf("Junk at end %+v", p.token))
 	}
 	return expr
 }
 
-func (p *Parser) parseAtom() Expr {
+func (p *Parser) parseAtom(syncTokens []TokenKind) Expr {
+	startSpan := Span{start: p.token.span.start, end: p.token.span.start}
 	if p.token.kind == INTEGER {
-		var e = &IntegerValue{span: p.token.span, value: p.token.value}
+		e := &IntegerValue{span: p.token.span, value: p.token.value}
 		p.nextToken()
 		return e
 	}
+	p.reporter.Report(p.token.span, "expecting integer")
+	span := p.skipTo(syncTokens).replaceIfNil(startSpan)
+	return &BadExpr{span: span}
+}
+
+func (p *Parser) parseRoot() Expr {
 	return &Start{span: Span{start: p.token.span.start, end: p.token.span.start}}
 }
 
-func (p *Parser) expectIdent() *Token {
+func (p *Parser) expectIdent() (*Identifier, error) {
 	if p.token.kind == IDENT {
-		var t = p.token
+		t := p.token
 		p.nextToken()
-		return t
+		return &Identifier{span: t.span, value: t.value}, nil
 	}
-	panic(fmt.Sprintf("expecting ident, got %d", p.token.kind))
+	p.reporter.Report(p.token.span, "expecting ident")
+	return nil, errors.New("")
+}
+
+func (p *Parser) skipTo(expectedTokens []TokenKind) Span {
+	span := Span{start: -1, end: -1}
+	for {
+		if slices.Contains(expectedTokens, p.token.kind) {
+			break
+		}
+		span = span.mergeSpan(p.token.span)
+		p.nextToken()
+	}
+	return span
 }
 
 func (p *Parser) nextToken() {

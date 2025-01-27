@@ -33,11 +33,11 @@ func TestLexer(t *testing.T) {
 		}
 		index += 1
 	}
-	if len(reporter.messages) != 1 {
+	if len(reporter.errors) != 1 {
 		t.Fatalf("expecting one error message")
 	}
 	var expectedMessage = Message{span: Span{start: 10, end: 12}, message: "Unrecognized character(s)"}
-	if reporter.messages[0] != expectedMessage {
-		t.Fatalf("bad message %+v", reporter.messages[0])
+	if reporter.errors[0] != expectedMessage {
+		t.Fatalf("bad message %+v", reporter.errors[0])
 	}
 }
