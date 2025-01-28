@@ -1,5 +1,7 @@
 package lang
 
+import "fmt"
+
 type Pos = int
 
 type Span struct {
@@ -49,4 +51,35 @@ func max(a int, b int) int {
 
 type Reporter interface {
 	Report(span Span, message string)
+}
+
+type Error struct {
+	span    Span
+	message string
+}
+
+type DefaultReporter struct {
+	errors []Error
+}
+
+func (reporter *DefaultReporter) HasErrors() bool {
+	return len(reporter.errors) > 0
+}
+
+func (reporter *DefaultReporter) Report(span Span, message string) {
+	reporter.errors = append(reporter.errors, Error{span: span, message: message})
+}
+
+func (reporter DefaultReporter) DisplayErrors(content string) {
+	for _, error := range reporter.errors {
+		fmt.Println(content)
+		for i := 0; i < error.span.start; i += 1 {
+			fmt.Print(" ")
+		}
+		for i := 0; i < max(error.span.Length(), 1); i += 1 {
+			fmt.Print("^")
+		}
+		fmt.Println()
+		fmt.Printf("%d:%d: %s\n", error.span.start, error.span.end, error.message)
+	}
 }

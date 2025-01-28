@@ -79,7 +79,7 @@ func compareAst(a Expr, b Expr, x *testing.T) bool {
 
 func TestParser(t *testing.T) {
 	var content = ".tutu\t[1] &*.toto"
-	var reporter = TestReporter{}
+	var reporter = DefaultReporter{}
 	var lexer = NewLexer(content, &reporter)
 	var parser = NewParser(lexer, &reporter)
 
@@ -106,7 +106,7 @@ func TestParser(t *testing.T) {
 
 func TestParserRecovery(t *testing.T) {
 	var content = ".tutu foo.toto"
-	var reporter = TestReporter{}
+	var reporter = DefaultReporter{}
 	var lexer = NewLexer(content, &reporter)
 	var parser = NewParser(lexer, &reporter)
 
@@ -122,7 +122,7 @@ func TestParserRecovery(t *testing.T) {
 
 	var ast = parser.Parse()
 
-	//reporter.Display(content)
+	reporter.DisplayErrors(content)
 
 	if !compareAst(ast, expectedAst, t) {
 		t.Fatalf("error in parsing")
@@ -131,7 +131,7 @@ func TestParserRecovery(t *testing.T) {
 
 func TestParserRecoverFieldAccess(t *testing.T) {
 	var content = ".[10]"
-	var reporter = TestReporter{}
+	var reporter = DefaultReporter{}
 	var lexer = NewLexer(content, &reporter)
 	var parser = NewParser(lexer, &reporter)
 
@@ -146,9 +146,9 @@ func TestParserRecoverFieldAccess(t *testing.T) {
 
 	var ast = parser.Parse()
 
-	fmt.Println(displayAst(ast))
+	fmt.Println(DisplayAst(ast))
 
-	reporter.Display(content)
+	reporter.DisplayErrors(content)
 
 	if !compareAst(ast, expectedAst, t) {
 		t.Fatalf("error in parsing")
@@ -157,7 +157,7 @@ func TestParserRecoverFieldAccess(t *testing.T) {
 
 func TestParserRecoverArrayAccess(t *testing.T) {
 	var content = "[]"
-	var reporter = TestReporter{}
+	var reporter = DefaultReporter{}
 	var lexer = NewLexer(content, &reporter)
 	var parser = NewParser(lexer, &reporter)
 
@@ -169,9 +169,9 @@ func TestParserRecoverArrayAccess(t *testing.T) {
 
 	var ast = parser.Parse()
 
-	fmt.Println(displayAst(ast))
+	fmt.Println(DisplayAst(ast))
 
-	reporter.Display(content)
+	reporter.DisplayErrors(content)
 
 	if !compareAst(ast, expectedAst, t) {
 		t.Fatalf("error in parsing")
@@ -180,7 +180,7 @@ func TestParserRecoverArrayAccess(t *testing.T) {
 
 func TestParserRecoverUnterminatedArrayAccess(t *testing.T) {
 	var content = "[10"
-	var reporter = TestReporter{}
+	var reporter = DefaultReporter{}
 	var lexer = NewLexer(content, &reporter)
 	var parser = NewParser(lexer, &reporter)
 
@@ -192,9 +192,9 @@ func TestParserRecoverUnterminatedArrayAccess(t *testing.T) {
 
 	var ast = parser.Parse()
 
-	fmt.Println(displayAst(ast))
+	fmt.Println(DisplayAst(ast))
 
-	reporter.Display(content)
+	reporter.DisplayErrors(content)
 
 	if !compareAst(ast, expectedAst, t) {
 		t.Fatalf("error in parsing")
