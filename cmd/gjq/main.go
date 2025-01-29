@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
@@ -13,6 +14,15 @@ import (
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-ny/simplehistory"
 )
+
+func readJson(content []byte) any {
+	var parsed any
+	err := json.Unmarshal(content, &parsed)
+	if err != nil {
+		panic(err) // malformed input
+	}
+	return parsed
+}
 
 func execute(text string) {
 	reporter := &lang.DefaultReporter{}
