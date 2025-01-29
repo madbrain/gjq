@@ -1,9 +1,15 @@
 package lang
 
-import "fmt"
-
 type Expr interface {
 	Span() Span
+}
+
+type BadExpr struct {
+	span Span
+}
+
+func (s *BadExpr) Span() Span {
+	return s.span
 }
 
 type Start struct {
@@ -17,10 +23,19 @@ func (s *Start) Span() Span {
 type FieldAccess struct {
 	span  Span
 	expr  Expr
-	field Token
+	field Identifier
 }
 
 func (s *FieldAccess) Span() Span {
+	return s.span
+}
+
+type BadFieldAccess struct {
+	span Span
+	expr Expr
+}
+
+func (s *BadFieldAccess) Span() Span {
 	return s.span
 }
 
@@ -43,21 +58,7 @@ func (s *IntegerValue) Span() Span {
 	return s.span
 }
 
-func displaySpan(s Span) string {
-	return fmt.Sprintf("{%d:%d}", s.start, s.end)
-}
-
-func displayAst(e Expr) string {
-	switch t := e.(type) {
-	case *Start:
-		return displaySpan(t.span)
-	case *FieldAccess:
-		return fmt.Sprintf("(%s%s.%s%s)", displaySpan(t.span), displayAst(t.expr), displaySpan(t.field.span), t.field.value)
-	case *ArrayAccess:
-		return fmt.Sprintf("(%s%s[%s])", displaySpan(t.span), displayAst(t.expr), displayAst(t.index))
-	case *IntegerValue:
-		return fmt.Sprintf("(%s%s)", displaySpan(t.span), t.value)
-	default:
-		panic("AST is unknown\n")
-	}
+type Identifier struct {
+	span  Span
+	value string
 }

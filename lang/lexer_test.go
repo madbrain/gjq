@@ -5,7 +5,7 @@ import (
 )
 
 func TestLexer(t *testing.T) {
-	var reporter = TestReporter{}
+	var reporter = DefaultReporter{}
 	var lexer = NewLexer(".tutu\t[1] &*.toto", &reporter)
 
 	var expected = []Token{
@@ -33,11 +33,11 @@ func TestLexer(t *testing.T) {
 		}
 		index += 1
 	}
-	if len(reporter.messages) != 1 {
+	if len(reporter.errors) != 1 {
 		t.Fatalf("expecting one error message")
 	}
-	var expectedMessage = Message{span: Span{start: 10, end: 12}, message: "Unrecognized character(s)"}
-	if reporter.messages[0] != expectedMessage {
-		t.Fatalf("bad message %+v", reporter.messages[0])
+	var expectedMessage = Error{span: Span{start: 10, end: 12}, message: "Unrecognized character(s)"}
+	if reporter.errors[0] != expectedMessage {
+		t.Fatalf("bad message %+v", reporter.errors[0])
 	}
 }
