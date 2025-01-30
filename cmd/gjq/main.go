@@ -2,41 +2,17 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 
-	"com.github/madbrain/gjq/lang"
+	"com.github/madbrain/gjq/eval"
 	"github.com/mattn/go-colorable"
 	"github.com/nyaosorg/go-readline-ny"
-	"github.com/nyaosorg/go-readline-ny/completion"
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-ny/simplehistory"
 )
-
-func readJson(content []byte) any {
-	var parsed any
-	err := json.Unmarshal(content, &parsed)
-	if err != nil {
-		panic(err) // malformed input
-	}
-	return parsed
-}
-
-func execute(text string) {
-	reporter := &lang.DefaultReporter{}
-	lexer := lang.NewLexer(text, reporter)
-	parser := lang.NewParser(lexer, reporter)
-	ast := parser.Parse()
-
-	if reporter.HasErrors() {
-		reporter.DisplayErrors(text)
-		return
-	}
-
-	fmt.Println(lang.DisplayAst(ast))
-}
 
 func main() {
 	history := simplehistory.New()
@@ -59,23 +35,31 @@ func main() {
 		DefaultColor:   "\x1B[33;49;1m",
 	}
 
-	editor.BindKey(keys.CtrlI, completion.CmdCompletionOrList{
-		Completion: completion.File{},
-		Postfix:    " ",
-	})
-	// If you do not want to list files with double-tab-key,
-	// use `CmdCompletion` instead of `CmdCompletionOrList`
+	editor.BindKey(keys.CtrlI, eval.ExprCompletion{})
+
+	args := os.Args[1:]
+
+	if len(args) == 0 {
+		fmt.Println("Expecting JSON file")
+		return
+	}
+
+	evaluator := eval.Evaluator{}
+	if err := evaluator.ReadJsonFile(args[0]); err != nil {
+		fmt.Println("Error reading JSON file")
+		return
+	}
 
 	fmt.Println("GJQ Shell. Type Ctrl-D to quit.")
 	for {
 		text, err := editor.ReadLine(context.Background())
 
 		if err != nil {
-			fmt.Printf("ERR=%s\n", err.Error())
+			//fmt.Printf("ERR=%s\n", err.Error())
 			return
 		}
 
-		execute(text)
+		evaluator.Evaluate(text)
 
 		history.Add(text)
 	}

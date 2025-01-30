@@ -14,7 +14,7 @@ func compareSpan(a Span, b Span, t *testing.T) bool {
 }
 
 func compareIdentifier(a Identifier, b Identifier, t *testing.T) bool {
-	if !compareSpan(a.span, b.span, t) || a.value != b.value {
+	if !compareSpan(a.span, b.span, t) || a.Value != b.Value {
 		t.Fatalf("not same Identifier %+v != %+v\n", a, b)
 		return false
 	}
@@ -34,7 +34,7 @@ func compareAst(a Expr, b Expr, x *testing.T) bool {
 	case *FieldAccess:
 		switch u := b.(type) {
 		case *FieldAccess:
-			return compareSpan(t.span, u.span, x) && compareAst(t.expr, u.expr, x) && compareIdentifier(t.field, u.field, x)
+			return compareSpan(t.span, u.span, x) && compareAst(t.Expr, u.Expr, x) && compareIdentifier(t.Field, u.Field, x)
 		default:
 			x.Fatalf("not same FieldAccess %+v != %+v\n", t, u)
 			return false
@@ -50,7 +50,7 @@ func compareAst(a Expr, b Expr, x *testing.T) bool {
 	case *ArrayAccess:
 		switch u := b.(type) {
 		case *ArrayAccess:
-			return compareSpan(t.span, u.span, x) && compareAst(t.expr, u.expr, x) && compareAst(t.index, u.index, x)
+			return compareSpan(t.span, u.span, x) && compareAst(t.Expr, u.Expr, x) && compareAst(t.Index, u.Index, x)
 		default:
 			x.Fatalf("not same ArrayAccess %+v != %+v\n", t, u)
 			return false
@@ -58,7 +58,7 @@ func compareAst(a Expr, b Expr, x *testing.T) bool {
 	case *IntegerValue:
 		switch u := b.(type) {
 		case *IntegerValue:
-			return compareSpan(t.span, u.span, x) && t.value == u.value
+			return compareSpan(t.span, u.span, x) && t.Value == u.Value
 		default:
 			x.Fatalf("not same IntegerValue %+v != %+v\n", t, u)
 			return false
@@ -85,16 +85,16 @@ func TestParser(t *testing.T) {
 
 	var expectedAst = &FieldAccess{
 		span: Span{start: 0, end: 17},
-		expr: &ArrayAccess{
+		Expr: &ArrayAccess{
 			span: Span{start: 0, end: 9},
-			expr: &FieldAccess{
+			Expr: &FieldAccess{
 				span:  Span{start: 0, end: 5},
-				expr:  &Start{span: Span{start: 0, end: 0}},
-				field: Identifier{span: Span{start: 1, end: 5}, value: "tutu"},
+				Expr:  &Start{span: Span{start: 0, end: 0}},
+				Field: Identifier{span: Span{start: 1, end: 5}, Value: "tutu"},
 			},
-			index: &IntegerValue{span: Span{start: 7, end: 8}, value: "1"},
+			Index: &IntegerValue{span: Span{start: 7, end: 8}, Value: "1"},
 		},
-		field: Identifier{span: Span{start: 13, end: 17}, value: "toto"},
+		Field: Identifier{span: Span{start: 13, end: 17}, Value: "toto"},
 	}
 
 	var ast = parser.Parse()
@@ -112,12 +112,12 @@ func TestParserRecovery(t *testing.T) {
 
 	var expectedAst = &FieldAccess{
 		span: Span{start: 0, end: 14},
-		expr: &FieldAccess{
+		Expr: &FieldAccess{
 			span:  Span{start: 0, end: 5},
-			expr:  &Start{span: Span{start: 0, end: 0}},
-			field: Identifier{span: Span{start: 1, end: 5}, value: "tutu"},
+			Expr:  &Start{span: Span{start: 0, end: 0}},
+			Field: Identifier{span: Span{start: 1, end: 5}, Value: "tutu"},
 		},
-		field: Identifier{span: Span{start: 10, end: 14}, value: "toto"},
+		Field: Identifier{span: Span{start: 10, end: 14}, Value: "toto"},
 	}
 
 	var ast = parser.Parse()
@@ -137,11 +137,11 @@ func TestParserRecoverFieldAccess(t *testing.T) {
 
 	var expectedAst = &ArrayAccess{
 		span: Span{start: 0, end: 5},
-		expr: &BadFieldAccess{
+		Expr: &BadFieldAccess{
 			span: Span{start: 0, end: 1},
 			expr: &Start{span: Span{start: 0, end: 0}},
 		},
-		index: &IntegerValue{span: Span{start: 2, end: 4}, value: "10"},
+		Index: &IntegerValue{span: Span{start: 2, end: 4}, Value: "10"},
 	}
 
 	var ast = parser.Parse()
@@ -163,8 +163,8 @@ func TestParserRecoverArrayAccess(t *testing.T) {
 
 	var expectedAst = &ArrayAccess{
 		span:  Span{start: 0, end: 2},
-		expr:  &Start{span: Span{start: 0, end: 0}},
-		index: &BadExpr{span: Span{start: 1, end: 1}},
+		Expr:  &Start{span: Span{start: 0, end: 0}},
+		Index: &BadExpr{span: Span{start: 1, end: 1}},
 	}
 
 	var ast = parser.Parse()
@@ -186,8 +186,8 @@ func TestParserRecoverUnterminatedArrayAccess(t *testing.T) {
 
 	var expectedAst = &ArrayAccess{
 		span:  Span{start: 0, end: 3},
-		expr:  &Start{span: Span{start: 0, end: 0}},
-		index: &IntegerValue{span: Span{start: 1, end: 3}, value: "10"},
+		Expr:  &Start{span: Span{start: 0, end: 0}},
+		Index: &IntegerValue{span: Span{start: 1, end: 3}, Value: "10"},
 	}
 
 	var ast = parser.Parse()
