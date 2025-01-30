@@ -45,7 +45,7 @@ func (l *Lexer) ident(start Pos, c int) *Token {
 	var result = string(byte(c))
 	for {
 		c = l.getChar()
-		if !isLetter(c) {
+		if !isLetterOrDigit(c) {
 			l.unget(c)
 			break
 		}
@@ -73,6 +73,10 @@ func isLetter(c int) bool {
 
 func isDigit(c int) bool {
 	return c >= '0' && c <= '9'
+}
+
+func isLetterOrDigit(c int) bool {
+	return isLetter(c) || isDigit(c)
 }
 
 func isSpace(c int) bool {

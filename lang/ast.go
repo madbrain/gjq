@@ -22,8 +22,8 @@ func (s *Start) Span() Span {
 
 type FieldAccess struct {
 	span  Span
-	expr  Expr
-	field Identifier
+	Expr  Expr
+	Field Identifier
 }
 
 func (s *FieldAccess) Span() Span {
@@ -41,8 +41,8 @@ func (s *BadFieldAccess) Span() Span {
 
 type ArrayAccess struct {
 	span  Span
-	expr  Expr
-	index Expr
+	Expr  Expr
+	Index Expr
 }
 
 func (s *ArrayAccess) Span() Span {
@@ -51,7 +51,7 @@ func (s *ArrayAccess) Span() Span {
 
 type IntegerValue struct {
 	span  Span
-	value string
+	Value string
 }
 
 func (s *IntegerValue) Span() Span {
@@ -60,5 +60,5 @@ func (s *IntegerValue) Span() Span {
 
 type Identifier struct {
 	span  Span
-	value string
+	Value string
 }

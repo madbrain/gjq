@@ -26,7 +26,7 @@ func (p *Parser) Parse() Expr {
 			dotSpan := p.token.span
 			p.nextToken()
 			if ident, err := p.expectIdent(); err == nil {
-				expr = &FieldAccess{span: expr.Span().mergeSpan(ident.span), expr: expr, field: *ident}
+				expr = &FieldAccess{span: expr.Span().mergeSpan(ident.span), Expr: expr, Field: *ident}
 			} else {
 				span := p.skipTo([]TokenKind{DOT, LEFT_BRT, EOF}).mergeSpan(dotSpan)
 				expr = &BadFieldAccess{span: expr.Span().mergeSpan(span), expr: expr}
@@ -37,11 +37,11 @@ func (p *Parser) Parse() Expr {
 			if p.token.kind != RIGHT_BRT {
 				p.reporter.Report(p.token.span, "expecting ']'")
 				span := p.skipTo([]TokenKind{DOT, LEFT_BRT, RIGHT_BRT, EOF}).mergeSpan(index.Span())
-				expr = &ArrayAccess{span: expr.Span().mergeSpan(span), expr: expr, index: index}
+				expr = &ArrayAccess{span: expr.Span().mergeSpan(span), Expr: expr, Index: index}
 			} else {
 				endSpan := p.token.span
 				p.nextToken()
-				expr = &ArrayAccess{span: expr.Span().mergeSpan(endSpan), expr: expr, index: index}
+				expr = &ArrayAccess{span: expr.Span().mergeSpan(endSpan), Expr: expr, Index: index}
 			}
 		} else if p.token.kind == EOF {
 			break
@@ -56,7 +56,7 @@ func (p *Parser) Parse() Expr {
 func (p *Parser) parseAtom(syncTokens []TokenKind) Expr {
 	startSpan := Span{start: p.token.span.start, end: p.token.span.start}
 	if p.token.kind == INTEGER {
-		e := &IntegerValue{span: p.token.span, value: p.token.value}
+		e := &IntegerValue{span: p.token.span, Value: p.token.value}
 		p.nextToken()
 		return e
 	}
@@ -73,7 +73,7 @@ func (p *Parser) expectIdent() (*Identifier, error) {
 	if p.token.kind == IDENT {
 		t := p.token
 		p.nextToken()
-		return &Identifier{span: t.span, value: t.value}, nil
+		return &Identifier{span: t.span, Value: t.value}, nil
 	}
 	p.reporter.Report(p.token.span, "expecting ident")
 	return nil, errors.New("")
