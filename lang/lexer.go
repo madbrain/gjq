@@ -51,7 +51,7 @@ func (l *Lexer) ident(start Pos, c int) *Token {
 		}
 		result += string(byte(c))
 	}
-	return &Token{span: Span{start: start, end: l.index}, kind: IDENT, value: result}
+	return &Token{span: Span{Start: start, End: l.index}, kind: IDENT, value: result}
 }
 
 func (l *Lexer) integer(start int, c int) *Token {
@@ -64,7 +64,7 @@ func (l *Lexer) integer(start int, c int) *Token {
 		}
 		result += string(byte(c))
 	}
-	return &Token{span: Span{start: start, end: l.index}, kind: INTEGER, value: result}
+	return &Token{span: Span{Start: start, End: l.index}, kind: INTEGER, value: result}
 }
 
 func isLetter(c int) bool {
@@ -85,12 +85,12 @@ func isSpace(c int) bool {
 
 func (l *Lexer) newToken(start int, kind TokenKind) *Token {
 	l.flushJunk()
-	return &Token{span: Span{start: start, end: l.index}, kind: kind}
+	return &Token{span: Span{Start: start, End: l.index}, kind: kind}
 }
 
 func (l *Lexer) flushJunk() {
 	if l.junk != "" {
-		l.reporter.Report(Span{start: l.junkPos, end: l.junkPos + len(l.junk)}, "Unrecognized character(s)")
+		l.reporter.Report(Span{Start: l.junkPos, End: l.junkPos + len(l.junk)}, "Unrecognized character(s)")
 		l.junk = ""
 	}
 }

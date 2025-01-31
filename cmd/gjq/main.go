@@ -50,9 +50,11 @@ func main() {
 		return
 	}
 
+	ctxt := context.WithValue(context.Background(), "evaluator", &evaluator)
+
 	fmt.Println("GJQ Shell. Type Ctrl-D to quit.")
 	for {
-		text, err := editor.ReadLine(context.Background())
+		text, err := editor.ReadLine(ctxt)
 
 		if err != nil {
 			//fmt.Printf("ERR=%s\n", err.Error())
