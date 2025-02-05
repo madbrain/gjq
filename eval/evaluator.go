@@ -11,6 +11,7 @@ import (
 
 type Evaluator struct {
 	jsonContent any
+	schema      lang.Type
 }
 
 type Context struct {
@@ -28,6 +29,7 @@ func (e *Evaluator) ReadJsonFile(filename string) error {
 		return err // malformed input
 	}
 	e.jsonContent = parsed
+	e.schema = InferSchema(parsed) // TODO store schema
 	return nil
 }
 

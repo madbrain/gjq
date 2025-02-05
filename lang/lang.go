@@ -5,8 +5,12 @@ import "fmt"
 type Pos = int
 
 type Span struct {
-	start Pos
-	end   Pos
+	Start Pos
+	End   Pos
+}
+
+func (s Span) Contains(position int) bool {
+	return s.Start <= position && position <= s.End
 }
 
 func (s Span) replaceIfNil(startSpan Span) Span {
@@ -17,11 +21,11 @@ func (s Span) replaceIfNil(startSpan Span) Span {
 }
 
 func (s Span) IsNil() bool {
-	return s.start < 0
+	return s.Start < 0
 }
 
 func (s Span) Length() int {
-	return s.end - s.start
+	return s.End - s.Start
 }
 
 func (s Span) mergeSpan(a Span) Span {
@@ -31,7 +35,7 @@ func (s Span) mergeSpan(a Span) Span {
 	if a.IsNil() {
 		return s
 	}
-	return Span{start: min(s.start, a.start), end: max(s.end, a.end)}
+	return Span{Start: min(s.Start, a.Start), End: max(s.End, a.End)}
 }
 
 // TODO pas moyen de trouver les fonction min/max sur des ints
@@ -73,13 +77,13 @@ func (reporter *DefaultReporter) Report(span Span, message string) {
 func (reporter DefaultReporter) DisplayErrors(content string) {
 	for _, error := range reporter.errors {
 		fmt.Println(content)
-		for i := 0; i < error.span.start; i += 1 {
+		for i := 0; i < error.span.Start; i += 1 {
 			fmt.Print(" ")
 		}
 		for i := 0; i < max(error.span.Length(), 1); i += 1 {
 			fmt.Print("^")
 		}
 		fmt.Println()
-		fmt.Printf("%d:%d: %s\n", error.span.start, error.span.end, error.message)
+		fmt.Printf("%d:%d: %s\n", error.span.Start, error.span.End, error.message)
 	}
 }
