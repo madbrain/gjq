@@ -31,6 +31,15 @@ func (l *Lexer) NextToken() *Token {
 		if c == ']' {
 			return l.newToken(start, RIGHT_BRT)
 		}
+		if c == '(' {
+			return l.newToken(start, LEFT_PAR)
+		}
+		if c == ')' {
+			return l.newToken(start, RIGHT_PAR)
+		}
+		if c == ',' {
+			return l.newToken(start, COMA)
+		}
 		if isLetter(c) {
 			return l.ident(start, c)
 		}

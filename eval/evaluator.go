@@ -67,6 +67,37 @@ func (e *Evaluator) evaluateExpr(ast lang.Expr, context *Context) any {
 			return getElement(e.evaluateExpr(a.Expr, context), index)
 		}
 		return nil
+	case *lang.FunctionCall:
+		var args []any = nil
+		for _, arg := range a.Arguments {
+			args = append(args, e.evaluateExpr(arg, context))
+		}
+		return e.evaluateFunc(e.evaluateExpr(a.Expr, context), a.Name.Value, args)
+	default:
+		return nil
+	}
+}
+
+func (e *Evaluator) evaluateFunc(target any, name string, args []any) any {
+	switch t := target.(type) {
+	case map[string]any:
+		if name == "keys" && len(args) == 0 {
+			keys := make([]any, len(t))
+			i := 0
+			for k := range t {
+				keys[i] = k
+				i++
+			}
+			return keys
+		} else {
+			return nil
+		}
+	case []any:
+		if name == "length" && len(args) == 0 {
+			return len(t)
+		} else {
+			return nil
+		}
 	default:
 		return nil
 	}

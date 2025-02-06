@@ -26,7 +26,26 @@ func (p *Parser) Parse() Expr {
 			dotSpan := p.token.span
 			p.nextToken()
 			if ident, err := p.expectIdent(); err == nil {
-				expr = &FieldAccess{span: expr.Span().mergeSpan(ident.Span), Expr: expr, Field: *ident}
+				if p.token.kind == LEFT_PAR {
+					p.nextToken()
+					var args []Expr = nil
+					for {
+						if p.token.kind == EOF || p.token.kind == RIGHT_PAR {
+							break
+						}
+						args = append(args, p.parseAtom([]TokenKind{DOT, COMA, RIGHT_PAR, EOF}))
+						if p.token.kind == COMA {
+							p.nextToken()
+						}
+					}
+					endSpan := p.token.span
+					if p.token.kind == RIGHT_PAR {
+						p.nextToken()
+					}
+					expr = &FunctionCall{span: expr.Span().mergeSpan(endSpan), Expr: expr, Name: ident, Arguments: args}
+				} else {
+					expr = &FieldAccess{span: expr.Span().mergeSpan(ident.Span), Expr: expr, Field: ident}
+				}
 			} else {
 				span := p.skipTo([]TokenKind{DOT, LEFT_BRT, EOF}).mergeSpan(dotSpan)
 				expr = &BadFieldAccess{span: expr.Span().mergeSpan(span), Expr: expr}

@@ -13,10 +13,24 @@ func compareSpan(a Span, b Span, t *testing.T) bool {
 	return true
 }
 
-func compareIdentifier(a Identifier, b Identifier, t *testing.T) bool {
+func compareIdentifier(a *Identifier, b *Identifier, t *testing.T) bool {
 	if !compareSpan(a.Span, b.Span, t) || a.Value != b.Value {
 		t.Fatalf("not same Identifier %+v != %+v\n", a, b)
 		return false
+	}
+	return true
+}
+
+func compareAsts(a []Expr, b []Expr, t *testing.T) bool {
+	if len(a) != len(b) {
+		t.Fatalf("not same length %d != %d\n", len(a), len(b))
+		return false
+	}
+	for i, ea := range a {
+		if !compareAst(ea, b[i], t) {
+			t.Fatalf("not same expr %+v != %+v\n", ea, b[i])
+			return false
+		}
 	}
 	return true
 }
@@ -37,6 +51,14 @@ func compareAst(a Expr, b Expr, x *testing.T) bool {
 			return compareSpan(t.span, u.span, x) && compareAst(t.Expr, u.Expr, x) && compareIdentifier(t.Field, u.Field, x)
 		default:
 			x.Fatalf("not same FieldAccess %+v != %+v\n", t, u)
+			return false
+		}
+	case *FunctionCall:
+		switch u := b.(type) {
+		case *FunctionCall:
+			return compareSpan(t.span, u.span, x) && compareAst(t.Expr, u.Expr, x) && compareIdentifier(t.Name, u.Name, x) && compareAsts(t.Arguments, u.Arguments, x)
+		default:
+			x.Fatalf("not same FunctionCall %+v != %+v\n", t, u)
 			return false
 		}
 	case *BadFieldAccess:
@@ -90,11 +112,11 @@ func TestParser(t *testing.T) {
 			Expr: &FieldAccess{
 				span:  Span{Start: 0, End: 5},
 				Expr:  &Start{span: Span{Start: 0, End: 0}},
-				Field: Identifier{Span: Span{Start: 1, End: 5}, Value: "tutu"},
+				Field: &Identifier{Span: Span{Start: 1, End: 5}, Value: "tutu"},
 			},
 			Index: &IntegerValue{span: Span{Start: 7, End: 8}, Value: "1"},
 		},
-		Field: Identifier{Span: Span{Start: 13, End: 17}, Value: "toto"},
+		Field: &Identifier{Span: Span{Start: 13, End: 17}, Value: "toto"},
 	}
 
 	var ast = parser.Parse()
@@ -115,9 +137,9 @@ func TestParserRecovery(t *testing.T) {
 		Expr: &FieldAccess{
 			span:  Span{Start: 0, End: 5},
 			Expr:  &Start{span: Span{Start: 0, End: 0}},
-			Field: Identifier{Span: Span{Start: 1, End: 5}, Value: "tutu"},
+			Field: &Identifier{Span: Span{Start: 1, End: 5}, Value: "tutu"},
 		},
-		Field: Identifier{Span: Span{Start: 10, End: 14}, Value: "toto"},
+		Field: &Identifier{Span: Span{Start: 10, End: 14}, Value: "toto"},
 	}
 
 	var ast = parser.Parse()
@@ -188,6 +210,37 @@ func TestParserRecoverUnterminatedArrayAccess(t *testing.T) {
 		span:  Span{Start: 0, End: 3},
 		Expr:  &Start{span: Span{Start: 0, End: 0}},
 		Index: &IntegerValue{span: Span{Start: 1, End: 3}, Value: "10"},
+	}
+
+	var ast = parser.Parse()
+
+	fmt.Println(DisplayAst(ast))
+
+	reporter.DisplayErrors(content)
+
+	if !compareAst(ast, expectedAst, t) {
+		t.Fatalf("error in parsing")
+	}
+}
+
+func TestParserFunctionCall(t *testing.T) {
+	var content = ".tutu(1,2).toto"
+	var reporter = DefaultReporter{}
+	var lexer = NewLexer(content, &reporter)
+	var parser = NewParser(lexer, &reporter)
+
+	var expectedAst = &FieldAccess{
+		span: Span{Start: 0, End: 15},
+		Expr: &FunctionCall{
+			span: Span{Start: 0, End: 10},
+			Expr: &Start{span: Span{Start: 0, End: 0}},
+			Name: &Identifier{Span: Span{Start: 1, End: 5}, Value: "tutu"},
+			Arguments: []Expr{
+				&IntegerValue{span: Span{Start: 6, End: 7}, Value: "1"},
+				&IntegerValue{span: Span{Start: 8, End: 9}, Value: "2"},
+			},
+		},
+		Field: &Identifier{Span: Span{Start: 11, End: 15}, Value: "toto"},
 	}
 
 	var ast = parser.Parse()
