@@ -8,7 +8,6 @@ import (
 
 	"com.github/madbrain/gjq/lang"
 	rl "github.com/nyaosorg/go-readline-ny"
-	"github.com/nyaosorg/go-readline-ny/completion"
 )
 
 type ExprCompletion struct {
@@ -17,8 +16,6 @@ type ExprCompletion struct {
 func (C ExprCompletion) String() string {
 	return "EXPR_COMPLETION"
 }
-
-var xx = &completion.CmdCompletionOrList{}
 
 type NullReporter struct{}
 
@@ -31,19 +28,70 @@ type Candidate struct {
 	value   string
 }
 
+type CompletionResult struct {
+	candidates      []Candidate
+	alreadyComplete bool
+}
+
+var objectFunctions = [...]string{"keys"}
+var arrayFunctions = [...]string{"length"}
+
+func completeFunction(candidates []Candidate, prefix string, addDot bool, functions []string) []Candidate {
+	for _, n := range functions {
+		if len(n) >= len(prefix) && n[0:len(prefix)] == prefix {
+			value := n + "()"
+			if addDot {
+				value = "." + value
+			}
+			candidates = append(candidates, Candidate{replace: len(prefix), value: value})
+		}
+	}
+	return candidates
+}
+
+func completeObject(candidates []Candidate, t *lang.ObjectType, prefix string, addDot bool) CompletionResult {
+	for n := range t.Fields {
+		if len(n) >= len(prefix) && n[0:len(prefix)] == prefix {
+			if n == prefix {
+				return CompletionResult{alreadyComplete: true}
+			}
+			value := n
+			if addDot {
+				value = "." + value
+			}
+			candidates = append(candidates, Candidate{replace: len(prefix), value: value})
+		}
+	}
+	candidates = completeFunction(candidates, prefix, addDot, objectFunctions[:])
+	return CompletionResult{candidates: candidates, alreadyComplete: false}
+}
+
 func findCompletionsAt(ast lang.Expr, position int) []Candidate {
 	var candidates []Candidate
-	if ast.Span().Contains(position) { // TODO or is at End ?
+	if ast.Span().Contains(position) {
 		switch a := ast.(type) {
+		case *lang.Start:
+			switch t := a.Type().(type) {
+			case *lang.ObjectType:
+				result := completeObject(candidates, t, "", true)
+				candidates = result.candidates
+			}
 		case *lang.FieldAccess:
 			if a.Field.Span.Contains(position) {
 				prefix := a.Field.Value[0 : position-a.Field.Span.Start]
 				switch t := a.Expr.Type().(type) {
 				case *lang.ObjectType:
-					for n := range t.Fields {
-						if len(n) >= len(prefix) && n[0:len(prefix)] == prefix {
-							candidates = append(candidates, Candidate{replace: len(prefix), value: n})
+					result := completeObject(candidates, t, prefix, false)
+					if result.alreadyComplete {
+						switch tt := a.Type().(type) {
+						case *lang.ObjectType:
+							result = completeObject(candidates, tt, "", true)
+							candidates = result.candidates
+						case *lang.ArrayType:
+							candidates = completeFunction(candidates, "", true, arrayFunctions[:])
 						}
+					} else {
+						candidates = result.candidates
 					}
 				}
 			} else if a.Expr.Span().Contains(position) {
@@ -52,10 +100,16 @@ func findCompletionsAt(ast lang.Expr, position int) []Candidate {
 		case *lang.BadFieldAccess:
 			switch t := a.Expr.Type().(type) {
 			case *lang.ObjectType:
-				for n := range t.Fields {
-					candidates = append(candidates, Candidate{replace: 0, value: n})
-				}
+				result := completeObject(candidates, t, "", false)
+				candidates = result.candidates
 			}
+		}
+	} else if position > ast.Span().End {
+		switch tt := ast.Type().(type) {
+		case *lang.ObjectType:
+			result := completeObject(candidates, tt, "", true)
+			candidates = result.candidates
+
 		}
 	}
 	return candidates

@@ -33,7 +33,7 @@ func (s *Start) Type() Type {
 type FieldAccess struct {
 	span  Span
 	Expr  Expr
-	Field Identifier
+	Field *Identifier
 	t     Type
 }
 
@@ -42,6 +42,22 @@ func (s *FieldAccess) Span() Span {
 }
 
 func (s *FieldAccess) Type() Type {
+	return s.t
+}
+
+type FunctionCall struct {
+	span      Span
+	Expr      Expr
+	Name      *Identifier
+	Arguments []Expr
+	t         Type
+}
+
+func (s *FunctionCall) Span() Span {
+	return s.span
+}
+
+func (s *FunctionCall) Type() Type {
 	return s.t
 }
 

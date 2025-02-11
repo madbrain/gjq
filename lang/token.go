@@ -4,8 +4,11 @@ type TokenKind = int
 
 const (
 	DOT TokenKind = iota
+	COMA
 	LEFT_BRT
 	RIGHT_BRT
+	LEFT_PAR
+	RIGHT_PAR
 
 	IDENT
 	INTEGER
