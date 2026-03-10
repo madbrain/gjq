@@ -102,6 +102,19 @@ func (s *IntegerValue) Type() Type {
 	return &NumberType{}
 }
 
+type VariableValue struct {
+	span  Span
+	Value string
+}
+
+func (s *VariableValue) Span() Span {
+	return s.span
+}
+
+func (s *VariableValue) Type() Type {
+	return &ErrorType{} // TODO types will be available after inference
+}
+
 type Identifier struct {
 	Span  Span
 	Value string

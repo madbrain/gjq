@@ -40,6 +40,16 @@ func (l *Lexer) NextToken() *Token {
 		if c == ',' {
 			return l.newToken(start, COMA)
 		}
+		if c == '@' {
+			return l.newToken(start, AROBA)
+		}
+		if c == '-' {
+			cc := l.getChar()
+			if cc == '>' {
+				return l.newToken(start, ARROW)
+			}
+			l.unget(cc)
+		}
 		if isLetter(c) {
 			return l.ident(start, c)
 		}

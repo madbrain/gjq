@@ -17,10 +17,25 @@ func NewParser(lexer *Lexer, reporter Reporter) *Parser {
 }
 
 /*
-Path ::= Atom ( '.' IDENT | '[' Atom ']' )*
+Path ::= Root FollowExpr
+FieldAccess ::= '.' IDENT ( '(' ExprList ')' )?
+ExprList ::= $EMPTY | Expr ( ',' Expr )*
+ArrayAccess ::= '[' Expr ']'
 */
 func (p *Parser) Parse() Expr {
 	expr := p.parseRoot()
+	for {
+		expr = p.parseFollowExpr(expr)
+		if p.token.kind == EOF {
+			break
+		}
+		span := p.skipTo([]TokenKind{DOT, LEFT_BRT, EOF})
+		p.reporter.Report(span, "unexpected tokens")
+	}
+	return expr
+}
+
+func (p *Parser) parseFollowExpr(expr Expr) Expr {
 	for {
 		if p.token.kind == DOT {
 			dotSpan := p.token.span
@@ -52,7 +67,7 @@ func (p *Parser) Parse() Expr {
 			}
 		} else if p.token.kind == LEFT_BRT {
 			p.nextToken()
-			index := p.parseAtom([]TokenKind{DOT, RIGHT_BRT, EOF})
+			index := p.parseExpr([]TokenKind{DOT, RIGHT_BRT, EOF})
 			if p.token.kind != RIGHT_BRT {
 				p.reporter.Report(p.token.span, "expecting ']'")
 				span := p.skipTo([]TokenKind{DOT, LEFT_BRT, RIGHT_BRT, EOF}).mergeSpan(index.Span())
@@ -62,16 +77,29 @@ func (p *Parser) Parse() Expr {
 				p.nextToken()
 				expr = &ArrayAccess{span: expr.Span().mergeSpan(endSpan), Expr: expr, Index: index}
 			}
-		} else if p.token.kind == EOF {
-			break
 		} else {
-			span := p.skipTo([]TokenKind{DOT, LEFT_BRT, EOF})
-			p.reporter.Report(span, "unexpected tokens")
+			break
 		}
 	}
 	return expr
 }
 
+/*
+Expr ::= Atom FollowExpr
+FollowExpr ::= ( FieldAccess | ArrayAccess )*
+*/
+func (p *Parser) parseExpr(syncTokens []TokenKind) Expr {
+	return p.parseFollowExpr(p.parseAtom(syncTokens))
+}
+
+/*
+Atom::= INTEGER
+
+	| IDENT
+	| '[' ExprList ']'
+	| '{' (IDENT ':' Expr)* '}'
+	| '@' ParamList '->' Expr
+*/
 func (p *Parser) parseAtom(syncTokens []TokenKind) Expr {
 	startSpan := Span{Start: p.token.span.Start, End: p.token.span.Start}
 	if p.token.kind == INTEGER {
@@ -79,7 +107,17 @@ func (p *Parser) parseAtom(syncTokens []TokenKind) Expr {
 		p.nextToken()
 		return e
 	}
-	p.reporter.Report(p.token.span, "expecting integer")
+	if p.token.kind == IDENT {
+		e := &VariableValue{span: p.token.span, Value: p.token.value}
+		p.nextToken()
+		return e
+	}
+	if p.token.kind == AROBA {
+		e := &VariableValue{span: p.token.span, Value: p.token.value}
+		p.nextToken()
+		return e
+	}
+	p.reporter.Report(p.token.span, "expecting integer or identifier")
 	span := p.skipTo(syncTokens).replaceIfNil(startSpan)
 	return &BadExpr{span: span}
 }

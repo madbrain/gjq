@@ -72,3 +72,20 @@ func TestLexingFunctionCall(t *testing.T) {
 
 	checkLexer(lexer, reporter, expected, nil, t)
 }
+
+func TestLexingLambda(t *testing.T) {
+	var reporter = &DefaultReporter{}
+	var lexer = NewLexer("@a,b -> 0", reporter)
+
+	var expected = []Token{
+		{span: Span{Start: 0, End: 1}, kind: AROBA},
+		{span: Span{Start: 1, End: 2}, kind: IDENT, value: "a"},
+		{span: Span{Start: 2, End: 3}, kind: COMA},
+		{span: Span{Start: 3, End: 4}, kind: IDENT, value: "b"},
+		{span: Span{Start: 5, End: 7}, kind: ARROW},
+		{span: Span{Start: 8, End: 9}, kind: INTEGER, value: "0"},
+		{span: Span{Start: 9, End: 9}, kind: EOF},
+	}
+
+	checkLexer(lexer, reporter, expected, nil, t)
+}

@@ -100,29 +100,34 @@ func compareAst(a Expr, b Expr, x *testing.T) bool {
 }
 
 func TestParser(t *testing.T) {
-	var content = ".tutu\t[1] &*.toto"
+	var content = ".tutu[1].toto"
 	var reporter = DefaultReporter{}
 	var lexer = NewLexer(content, &reporter)
 	var parser = NewParser(lexer, &reporter)
 
 	var expectedAst = &FieldAccess{
-		span: Span{Start: 0, End: 17},
+		span: Span{Start: 0, End: 13},
 		Expr: &ArrayAccess{
-			span: Span{Start: 0, End: 9},
+			span: Span{Start: 0, End: 8},
 			Expr: &FieldAccess{
 				span:  Span{Start: 0, End: 5},
 				Expr:  &Start{span: Span{Start: 0, End: 0}},
 				Field: &Identifier{Span: Span{Start: 1, End: 5}, Value: "tutu"},
 			},
-			Index: &IntegerValue{span: Span{Start: 7, End: 8}, Value: "1"},
+			Index: &IntegerValue{span: Span{Start: 6, End: 7}, Value: "1"},
 		},
-		Field: &Identifier{Span: Span{Start: 13, End: 17}, Value: "toto"},
+		Field: &Identifier{Span: Span{Start: 9, End: 13}, Value: "toto"},
 	}
 
 	var ast = parser.Parse()
 
-	if !compareAst(ast, expectedAst, t) {
+	if reporter.HasErrors() {
+		reporter.DisplayErrors(content)
 		t.Fatalf("error in parsing")
+	}
+
+	if !compareAst(ast, expectedAst, t) {
+		t.Fatalf("error in parsing: not same AST")
 	}
 }
 
